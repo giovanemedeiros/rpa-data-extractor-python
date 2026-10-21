@@ -10,7 +10,7 @@ from playwright.sync_api import sync_playwright, Playwright, Browser, BrowserCon
 load_dotenv()
 
 class BrowserManager:
-    # Manages the lifecycle and configuration of the Playwright Chromium browser.
+    """Manages the lifecycle and configuration of the Playwright Chromium browser."""
 
     DEFAULT_USER_AGENT = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -30,7 +30,7 @@ class BrowserManager:
         self._page: Optional[Page] = None
 
     def start(self) -> Page:
-        # Starts Playwright, launches Chromium, and configures context and page.
+        """Starts Playwright, launches Chromium, and configures context and page."""
         self._playwright = sync_playwright().start()
         self._browser = self._playwright.chromium.launch(headless=self.headless)
         self._context = self._browser.new_context(viewport={'width': 1920, 'height': 1080}, user_agent=self.DEFAULT_USER_AGENT)
@@ -39,7 +39,7 @@ class BrowserManager:
         return self._page
 
     def close(self) -> None:
-        # Gracefully closes page, context, browser, and playwright instances.
+        """Gracefully closes page, context, browser, and playwright instances."""
         if self._page:
             self._page.close()
         if self._context:
