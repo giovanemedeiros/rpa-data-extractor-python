@@ -6,7 +6,7 @@ from typing import List, Dict
 from playwright.sync_api import Page
 
 class B3TableExtractor:
-    # Extracts tabular market composition data from B3 index page.
+    """Extracts tabular market composition data from B3 index page."""
 
     HEADER_SELECTOR = "table thead tr th"
     ROWS_SELECTOR = "table tbody tr"
