@@ -32,7 +32,7 @@ class B3TableExtractor:
         headers = self.get_headers()
         print(f"[INFO] [B3TableExtractor] Detected table headers: {headers}")
 
-        # Extração em alta performance via evaluate no JavaScript do navegador:
+        # High-performance batch extraction via JavaScript evaluate in browser DOM:
         raw_rows: List[List[str]] = self.page.evaluate(
             """
             () => {

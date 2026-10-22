@@ -33,7 +33,7 @@ class B3DataCleaner:
         if "Part. (%)" in df.columns:
             df["Part. (%)"] = df["Part. (%)"].astype(str).str.replace(",", ".", regex=False)
             df["Part. (%)"] = pd.to_numeric(df["Part. (%)"], errors="coerce").fillna(0.0).astype(float)
-            # Cria a fração decimal para uso contábil/financeiro
+            # Create decimal fraction for financial and accounting calculations
             df["Part. Decimal"] = (df["Part. (%)"] / 100.0).round(6)
 
         # Sort in descending order of participation (largest weights first)
