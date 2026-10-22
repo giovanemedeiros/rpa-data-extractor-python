@@ -1,0 +1,49 @@
+name: B3 RPA Data Extractor
+
+on:
+  workflow_dispatch:
+  # Scheduled execution: Monday to Friday at 21:00 UTC (18:00 BRT - after B3 market close)
+  # Uncomment the schedule below to enable recurring automatic execution in production
+  # schedule:
+  #   - cron: "0 21 * * 1-5"
+
+jobs:
+  extract-and-report:
+    name: Extract B3 Market Data and Generate Reports
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright Chromium with System Dependencies
+        run: |
+          playwright install chromium --with-deps
+
+      - name: Run B3 RPA Data Extractor
+        run: |
+          python src/main.py
+
+      - name: Upload Executive Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: b3-ibovespa-reports
+          path: |
+            output/*.csv
+            output/*.xlsx
+            output/*.pdf
+          if-no-files-found: warn
+          retention-days: 30
