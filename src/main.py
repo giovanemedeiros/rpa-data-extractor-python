@@ -2,8 +2,11 @@
 Entry point for the RPA Data Extractor robot.
 Extracts market data and index theoretical portfolios from B3.
 """
+import os
 import sys
 from pathlib import Path
+from typing import Dict, Any
+import pandas as pd
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
@@ -57,6 +60,9 @@ def main() -> None:
         pdf_reporter = B3PdfReporter(page)
         pdf_file = pdf_reporter.generate_report(enriched_df, metrics, type_distribution)
 
+    # 7. Publish visual summary to GitHub Actions if running in CI/CD
+    publish_github_summary(metrics, enriched_df, type_distribution)
+
     print("\n=================================================================")
     print("           B3 IBOVESPA RPA EXTRACTION SUMMARY                   ")
     print("=================================================================")
@@ -71,5 +77,64 @@ def main() -> None:
     print("=================================================================\n")
     print("[INFO] Robot execution finished cleanly.")
 
+def publish_github_summary(
+    metrics: Dict[str, Any],
+    df: pd.DataFrame,
+    type_distribution: pd.DataFrame,
+) -> None:
+    """Publishes an executive Markdown summary to $GITHUB_STEP_SUMMARY when executing in GitHub Actions."""
+    summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return
+
+    top_10 = df.head(10)
+    top_10_rows = "\n".join(
+        f"| {row['Posição']} | `{row['Código']}` | {row['Ação']} | {row['Classe Ação']} | {row['Part. (%)']:.3f}% | {row['Part. Acumulada (%)']:.3f}% | {row['Classificação']} |"
+        for _, row in top_10.iterrows()
+    )
+
+    dist_rows = "\n".join(
+        f"| **{row['Classe Ação']}** | {row['Quantidade_Ativos']} | {row['Participacao_Total_Pct']:.3f}% |"
+        for _, row in type_distribution.iterrows()
+    ) if not type_distribution.empty else ""
+
+    total_shares = f"{metrics.get('total_quantity', 0):,}".replace(",", ".")
+
+    markdown = f"""# B3 Ibovespa - Relatório Executivo RPA
+
+> Extração automatizada da Carteira Teórica do Índice Ibovespa diretamente dos sistemas oficiais da B3.
+
+## Indicadores Chave de Mercado (KPIs)
+
+| Indicador | Valor |
+|:---|---:|
+| **Total de Ativos na Carteira** | **{metrics.get('total_assets', 0)}** |
+| **Volume Total de Ações Teóricas** | **{total_shares}** |
+| **Concentração Top 5 Maiores Ações** | **{metrics.get('top_5_share_pct', 0.0):.2f}%** |
+| **Concentração Top 10 Maiores Ações** | **{metrics.get('top_10_share_pct', 0.0):.2f}%** |
+
+## Top 10 Maiores Ações por Participação
+
+| Pos | Código | Ação | Classe | Part. (%) | Acumulado (%) | Classificação |
+|:---:|:---:|:---|:---:|---:|---:|:---:|
+{top_10_rows}
+
+## Distribuição da Carteira por Classe de Ações
+
+| Classe de Ação | Quantidade de Ativos | Participação Total (%) |
+|:---|:---:|---:|
+{dist_rows}
+
+---
+*Relatório gerado automaticamente por robô RPA em Python • Artefatos disponíveis para download na seção Artifacts.*
+"""
+    try:
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write(markdown)
+        print("[SUCCESS] Published executive summary to GITHUB_STEP_SUMMARY.")
+    except Exception as exc:
+        print(f"[WARN] Failed to write GITHUB_STEP_SUMMARY: {exc}")
+
 if __name__ == "__main__":
     main()
+
